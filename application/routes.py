@@ -1,50 +1,60 @@
 from application import app, db
-from application.models import Todo
+from application.models import Tasks
+from flask import render_template, request,redirect, url_for
+from application.forms import TaskForm
 
-@app.route("/", methods=['GET','POST'])
-@app.route("/home", methods=['GET','POST'])
+@app.route("/")
+@app.route("/home")
 def home():
-    all_tasks = Todo.query.all()
+    all_tasks = Tasks.query.all()
     output = ""
-    for task in all_tasks:
-        output += task.description + "Completed?"+ str(Todo.completed)+"<br>"
-    return output
+    return render_template("index.html", title="Home", all_tasks=all_tasks)
 
-@app.route("/create")
+@app.route("/create", methods=["GET","POST"])
 def create():
-    new_todo = Todo(description = "new task")
-    db.session.add(new_todo)
-    db.session.commit()
-    return "New task added"
+    form = TaskForm()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            new_task = Tasks(description=form.description.data, completed = False) 
+            db.session.add(new_task)
+            db.session.commit()
+            return redirect(url_for("home"))
 
-@app.route("/complete/<int:id>")
-def complete(id):
-    task = Todo.query.filter_by(id=id).first()
-    task.completed = True
-    db.session.commit()
-    return "Task is now complete"
-
-@app.route("/incomplete/<int:id>")
-def incomplete(id):
-    task = Todo.query.filter_by(id=id).first()
-    task.completed = False
-    db.session.commit()
-    return "Task is now complete"
-
-@app.route("/update/<new_description>")
-def update(new_description):
-    task = Todo.query.order_by(Todo.id.desc()).first()
-    task.description = new_description
-    db.session.commit()
-    return "Most recent task was updated with the description: " + new_description
+    return render_template("add.html", title="Create a Task",form=form)
 
 
-@app.route("/delete/<int:id>")
+@app.route("/update/<int:id>", methods= ["GET","POST"])
+def update(id):
+    form = TaskForm()
+    task = Tasks.query.filter_by(id=id).first()
+    if request.method == "POST":
+        task.description = form.description.data
+        db.session.commit()
+        return redirect(url_for("home"))
+
+    return render_template("update.html", form=form, title="Update Task", task=task)
+
+
+@app.route("/delete/<int:id>", methods=["GET","POST"])
 def delete(id):
-    task = Todo.query.filter_by(id=id).first()
+    task = Tasks.query.filter_by(id=id).first()
     db.session.delete(task)
     db.session.commit()
-    return "task was deleted: " + id
+    return redirect(url_for("home"))
+
+@app.route("/complete/<int:id>", methods=["GET","POST"])
+def complete(id):
+    task = Tasks.query.filter_by(id=id).first()
+    task.completed = True
+    db.session.commit()
+    return redirect(url_for("home"))
+
+@app.route("/incomplete/<int:id>", methods=["GET","POST"])
+def incomplete(id):
+    task = Tasks.query.filter_by(id=id).first()
+    task.completed = False
+    db.session.commit()
+    return redirect(url_for("home"))
 
 
 

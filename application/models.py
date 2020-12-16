@@ -1,6 +1,6 @@
 from application import db
 from datetime import datetime
-class Todo(db.Model):
+class Tasks(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.String(240))
     description = db.Column(db.String(240), nullable=False)
